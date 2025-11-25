@@ -109,3 +109,23 @@ def create_incident():
     priority  = data.get("priority", "P3")
     assigned_to = data.get("assigned_to", "unassigned")
 
+    now = datetime.utcnow().isoformat()
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO incidents(
+            short_description, category, priority, status, assigned_to, created_at, updated_at
+        )
+        VALUES (?,?,?,?,?,?,?);
+    """,(short_description, category, priority, status,
+        assigned_to, now, now))
+    
+    conn.commit()
+    new_id = cur.lastrowid
+    conn.close()
+
+    return jsonify({"id": new_id, "message": "Incident created"}), 201
+    
+
