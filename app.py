@@ -172,4 +172,7 @@ def update_incident(incident_id):
         conn.close()
         return jsonify({"error" : "Incident not found"}), 404
 
+    #This will build a dynamic SQL SET clause
+     
+
 
