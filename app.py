@@ -72,6 +72,9 @@ def list_incidents():
     #Converts the outcome of the previous iteration to json dictionary format. 
     return jsonify(incidents), 200
 
+
+
+
 #This function gets an specific incident from the database
 @app.route("/incidents/<int:incident_id>", methods=["GET"])
 def get_incident(incident_id):
@@ -98,22 +101,30 @@ def get_incident(incident_id):
 #This function post, creates a new ITSM incident
 @app.route("/incidents", methods=["POST"])
 def create_incident():
+    #Here we assign a request containing an incident or an empty dictionary.
     data = request.get_json() or {}
 
+    #Here we require a short description to be retrieve value from the request body.
     short_description = data.get("short description")
+    #Here there is a conditional that checks if variable contains a value if not then send an error
     if not short_description:
-        return jsonify({"error"; "short_description is required"}), 400
+        return jsonify({"error": "short_description is required"}), 400
     
+    #Here I am assigning a default value to each variable. 
     category = data.get("category", "general")
     status = data.get("status", "open")
     priority  = data.get("priority", "P3")
     assigned_to = data.get("assigned_to", "unassigned")
 
+    #this variable is recieving a date and time value in UTC format. 
     now = datetime.utcnow().isoformat()
 
+    #Here we are opening a DB connection.
     conn = get_conn()
     cur = conn.cursor()
 
+
+    #Here we are executing an SQL query of inserting values
     cur.execute("""
         INSERT INTO incidents(
             short_description, category, priority, status, assigned_to, created_at, updated_at
@@ -122,10 +133,21 @@ def create_incident():
     """,(short_description, category, priority, status,
         assigned_to, now, now))
     
+    #This will commit the changes to SQLite
     conn.commit()
     new_id = cur.lastrowid
     conn.close()
-
+    #This will send the new value as a JSON message. 
     return jsonify({"id": new_id, "message": "Incident created"}), 201
-    
 
+
+#This function updates an incident 
+@app.route("/incidents/<int:incident_id>", methods=["PUT"])
+def update_incident(incident_id):
+
+    data = request.get_json() or {}
+
+    allowed_fields = ["Short_description", "category", "priority", "status", "assigned_to"]
+
+    fields_to_update = {k: v for k, v in data.items() if k in allowed_fields}
+    
