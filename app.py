@@ -144,10 +144,32 @@ def create_incident():
 #This function updates an incident 
 @app.route("/incidents/<int:incident_id>", methods=["PUT"])
 def update_incident(incident_id):
-
+    #This will assign a request of an incident in the form of a dictionary or an empty dictionary 
     data = request.get_json() or {}
 
+    #This assigns the allowed defined fields that we will eventually update
     allowed_fields = ["Short_description", "category", "priority", "status", "assigned_to"]
 
+    """ Build a new dictionary, for each key (k) and value(v) in the incoming data if the key 
+    is present in the allowed fields then a value will be asssigned and dictionary created"""
+
     fields_to_update = {k: v for k, v in data.items() if k in allowed_fields}
+
+    #This checks if fields_to_update has a value if not then error message.
+    if not field_to_update:
+        return jsonify({"Error": "No valid fields to update"}), 400
     
+    #This opens a connection to the DB
+    conn = get_conn()
+    #This initialize the cursor to the db connection
+    cur = conn.cursor()
+
+    #This is to check if incident exists
+    cur.execute("SELECT id FROM incidents WHERE id = ?;",(incident_id,))
+
+    #If the cursor returns an empty dictionary then the connection closes and an error is returned
+    if cur.fetchone() is None:
+        conn.close()
+        return jsonify({"error" : "Incident not found"}), 404
+
+
