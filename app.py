@@ -7,7 +7,7 @@ from pathlib import Path
 DB_PATH = Path("incidents.db")
 
 #app initialization statement 
-app = FLASK(__name__)
+app = Flask(__name__)
 
 
 #This function opens the connection to the database
@@ -173,6 +173,47 @@ def update_incident(incident_id):
         return jsonify({"error" : "Incident not found"}), 404
 
     #This will build a dynamic SQL SET clause
-     
+     set_clause = ", ".join(f"{field} = ?" for field in fields_to_update.keys())
+     params = list(field_to_update.values())
+
+     update_at = datetime.utcnow().isoformat()
+     set_clause += ", updated_at = ?"
+     params.append(updated_at)
+
+     params.append(incident_id)
+
+     cur.execute(f"UPDATE incidents SET{clause} WHERE id = ?;", params)
+     conn.commit()
+     conn.close
+
+     return jsonify({"message": "Incident updated"}), 200
+
+## This will delete an incident
+@app.route("/incidents/<int:incident_id>", methods=["DELETE"])
+def delete_incident(incident_id):
+
+    #Open DB connection
+    conn = get_conn()
+    cur = conn.cursor()
+
+    #Cursor delete command using incident ID
+    cur.execute("DELETE FROM incidents WHERE id = ?;", (incident_id,))
+    #This indicates how many rows are deleted. 
+    deleted = cur.rowcount
+
+    #Commit changes and end connection. 
+    conn.commit()
+    conn.close()
+
+    #A conditional to check if the incident is deleted trhough the cursor. 
+    if deleted == 0:
+        return jsonify({"error": "Incident not found"}), 404
+    return jsonify({"message": "Incident deleted"}), 200
+
+
+#This runs the app 
+if __name__ == "main":
+    init_db()
+    app.run(host="0.0.0.0", port = 5000, debug=True)
 
 
